@@ -1,10 +1,16 @@
-import { Injectable, ConflictException } from '@nestjs/common';
+import {
+  Injectable,
+  ConflictException,
+  NotFoundException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import * as bcrypt from 'bcrypt';
 import { User } from './schemas/user.schema';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UserResponseDto } from './dto/user-response.dto';
+import { LoginUserDto } from './dto/login-user.dto';
 
 @Injectable()
 export class UserService {
@@ -46,7 +52,20 @@ export class UserService {
     return await this.userModel.findById(id).select('-password').exec();
   }
 
-  async findByEmail(email: string): Promise<User | null> {
-    return await this.userModel.findOne({ email }).exec();
+  async login(loginUserDto: LoginUserDto): Promise<UserResponseDto> {
+    const { email, password } = loginUserDto;
+    const user = await this.userModel.findOne({ email }).exec();
+    if (!user) throw new NotFoundException('User Not Found');
+
+    const isValid = await bcrypt.compare(password, user.password);
+    if (!isValid) throw new UnauthorizedException('Invalid Password');
+
+    return {
+      id: (user._id as string).toString(),
+      username: user.username,
+      email: user.email,
+      createdAt: user.createdAt,
+      updatedAt: user.updatedAt,
+    };
   }
 }
