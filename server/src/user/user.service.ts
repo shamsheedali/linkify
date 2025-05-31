@@ -40,7 +40,7 @@ export class UserService {
 
     // Return user without password
     return {
-      id: (savedUser._id as string).toString(),
+      id: savedUser._id.toString(),
       username: savedUser.username,
       email: savedUser.email,
       createdAt: savedUser.createdAt,
@@ -61,7 +61,7 @@ export class UserService {
     if (!isValid) throw new UnauthorizedException('Invalid Password');
 
     return {
-      id: (user._id as string).toString(),
+      id: user._id.toString(),
       username: user.username,
       email: user.email,
       createdAt: user.createdAt,
