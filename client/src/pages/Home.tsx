@@ -2,9 +2,12 @@ import LinkCard from "@/components/link-card";
 import Navbar from "@/components/navbar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import useAuthStore from "@/store/useAuthStore";
 import { ArrowRight } from "lucide-react";
 
 const Home = () => {
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+
   return (
     <div>
       <Navbar />
@@ -28,12 +31,15 @@ const Home = () => {
               required
             />
           </div>
-          <Button>Create your Linkify link</Button>
+          {isAuthenticated ? (
+            <Button>Create your Linkify link</Button>
+          ) : (
+            <Button>
+              Get Started
+              <ArrowRight />
+            </Button>
+          )}
         </div>
-        <Button>
-          Get Started
-          <ArrowRight />
-        </Button>
       </div>
 
       <div className="w-full h-screen px-20 py-5 font-clash">
