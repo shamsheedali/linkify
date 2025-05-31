@@ -9,12 +9,78 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useState } from "react";
 import { Link } from "react-router-dom";
 
-export function SignupForm({
-  className,
-  ...props
-}: React.ComponentPropsWithoutRef<"div">) {
+type SignupFormProps = React.ComponentPropsWithoutRef<"div"> & {
+  onSignUp: (formData: {
+    username: string;
+    email: string;
+    password: string;
+  }) => void;
+};
+
+export function SignupForm({ className, onSignUp, ...props }: SignupFormProps) {
+  const [formData, setFormData] = useState({
+    username: "",
+    email: "",
+    password: "",
+    confirmPassword: "",
+  });
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { id, value } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      [id]: value,
+    }));
+  };
+
+  const validateForm = () => {
+    const { username, email, password, confirmPassword } = formData;
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,}$/;
+
+    if (username.length < 4 || username.length > 30) {
+      alert("Username must be between 4 and 30 characters.");
+      return false;
+    }
+
+    if (!emailRegex.test(email)) {
+      alert("Enter a valid email address.");
+      return false;
+    }
+
+    if (!passwordRegex.test(password)) {
+      alert(
+        "Password must be at least 8 characters, and include uppercase, lowercase, number, and special character."
+      );
+      return false;
+    }
+
+    if (password !== confirmPassword) {
+      alert("Passwords do not match.");
+      return false;
+    }
+
+    return true;
+  };
+
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+
+    if (!validateForm()) return;
+
+    const signupData = {
+      username: formData.username,
+      email: formData.email,
+      password: formData.password,
+    };
+
+    onSignUp(signupData);
+  };
+
   return (
     <div className={cn("flex flex-col gap-6", className)} {...props}>
       <Card>
@@ -25,7 +91,7 @@ export function SignupForm({
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <form>
+          <form onSubmit={handleSubmit}>
             <div className="flex flex-col gap-6">
               <div className="grid gap-2">
                 <Label htmlFor="username">Username</Label>
@@ -33,6 +99,8 @@ export function SignupForm({
                   id="username"
                   type="text"
                   placeholder="Your username"
+                  value={formData.username}
+                  onChange={handleChange}
                   required
                 />
               </div>
@@ -42,6 +110,8 @@ export function SignupForm({
                   id="email"
                   type="email"
                   placeholder="m@example.com"
+                  value={formData.email}
+                  onChange={handleChange}
                   required
                 />
               </div>
@@ -51,6 +121,19 @@ export function SignupForm({
                   id="password"
                   type="password"
                   placeholder="Enter password"
+                  value={formData.password}
+                  onChange={handleChange}
+                  required
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="confirmPassword">Confirm Password</Label>
+                <Input
+                  id="confirmPassword"
+                  type="password"
+                  placeholder="Confirm password"
+                  value={formData.confirmPassword}
+                  onChange={handleChange}
                   required
                 />
               </div>
@@ -60,9 +143,9 @@ export function SignupForm({
             </div>
             <div className="mt-4 text-center text-sm">
               Already have an account?{" "}
-               <a href="#" className="underline underline-offset-4">
+              <Link to={"/login"} className="underline underline-offset-4">
                 Sign in
-              </a>
+              </Link>
             </div>
           </form>
         </CardContent>
