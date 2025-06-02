@@ -43,4 +43,31 @@ export class UrlService {
       .sort({ createdAt: -1 })
       .exec();
   }
+
+  async updateUrl(id: string, userId: string, newUrl: string): Promise<Url> {
+    const url = await this.urlModel.findOne({
+      _id: new Types.ObjectId(id),
+      userId: new Types.ObjectId(userId),
+    });
+
+    if (!url) {
+      throw new NotFoundException('URL not found or not owned by user');
+    }
+
+    url.originalUrl = newUrl;
+    return await url.save();
+  }
+
+  async deleteUrl(id: string, userId: string): Promise<void> {
+    const url = await this.urlModel.findOne({
+      _id: new Types.ObjectId(id),
+      userId: new Types.ObjectId(userId),
+    });
+
+    if (!url) {
+      throw new NotFoundException('URL not found or not owned by user');
+    }
+
+    await this.urlModel.deleteOne({ _id: url._id });
+  }
 }
