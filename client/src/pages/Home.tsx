@@ -2,11 +2,31 @@ import LinkCard from "@/components/link-card";
 import Navbar from "@/components/navbar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import urlService from "@/services/urlService";
 import useAuthStore from "@/store/useAuthStore";
 import { ArrowRight } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 
 const Home = () => {
+  const [longUrl, setLongUrl] = useState("");
+  const [urls, setUrls] = useState([]);
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+
+  const fetchUrls = async () => {
+    const data = await urlService.getUrls();
+    setUrls(data);
+  };
+
+  useEffect(() => {
+    fetchUrls();
+  }, []);
+
+  const handleCreateUrl = async () => {
+    await urlService.createShortUrl(longUrl);
+    setLongUrl("");
+    fetchUrls();
+  };
 
   return (
     <div>
@@ -28,25 +48,28 @@ const Home = () => {
               id="url"
               type="text"
               placeholder="https://example.com/my-long-url"
+              value={longUrl}
+              onChange={(e) => setLongUrl(e.target.value)}
               required
             />
           </div>
           {isAuthenticated ? (
-            <Button>Create your Linkify link</Button>
+            <Button onClick={handleCreateUrl}>Create your Linkify link</Button>
           ) : (
-            <Button>
-              Get Started
-              <ArrowRight />
-            </Button>
+            <Link to={"/login"}>
+              <Button>
+                Get Started
+                <ArrowRight />
+              </Button>
+            </Link>
           )}
         </div>
       </div>
 
-      <div className="w-full h-screen px-20 py-5 font-clash">
+      <div className="w-full h-fit px-20 py-5 font-clash">
         <h1 className="text-3xl font-bold mb-10">Your Links</h1>
         <div className="flex flex-col gap-8">
-          <LinkCard />
-          <LinkCard />
+          <LinkCard urls={urls} onChange={fetchUrls} />
         </div>
       </div>
     </div>
