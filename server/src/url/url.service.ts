@@ -2,14 +2,13 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { Url } from './schemas/url.schema';
+import { nanoid } from 'nanoid';
 
 @Injectable()
 export class UrlService {
   constructor(@InjectModel(Url.name) private readonly urlModel: Model<Url>) {}
 
   async shortenUrl(originalUrl: string, userId?: string): Promise<Url> {
-    const { nanoid } = await import('nanoid'); //dynamic import fixes ESM issue
-
     let shortCode: string;
 
     // Generate a unique short code
