@@ -19,8 +19,12 @@ const Home = () => {
   };
 
   useEffect(() => {
-    fetchUrls();
-  }, []);
+    if (isAuthenticated) {
+      fetchUrls();
+    } else {
+      setUrls([]);
+    }
+  }, [isAuthenticated]);
 
   const handleCreateUrl = async () => {
     await urlService.createShortUrl(longUrl);
