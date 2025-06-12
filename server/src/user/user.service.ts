@@ -4,57 +4,52 @@ import {
   NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
 import * as bcrypt from 'bcrypt';
-import { User } from './schemas/user.schema';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UserResponseDto } from './dto/user-response.dto';
 import { LoginUserDto } from './dto/login-user.dto';
+import { UserRepository } from './user.repository';
+import { User } from './schemas/user.schema';
 
 @Injectable()
 export class UserService {
-  constructor(@InjectModel(User.name) private userModel: Model<User>) {}
+  constructor(private readonly userRepository: UserRepository) {}
 
   async create(createUserDto: CreateUserDto): Promise<UserResponseDto> {
     const { username, email, password } = createUserDto;
 
-    // Check for existing user
-    const existingUser = await this.userModel.findOne({
-      $or: [{ email }, { username }],
-    });
-
+    const existingUser = await this.userRepository.findByUsernameOrEmail(
+      username,
+      email,
+    );
     if (existingUser) {
       throw new ConflictException('Username or email already exists');
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    const user = new this.userModel({
+    const user = await this.userRepository.createUser({
       username,
       email,
       password: hashedPassword,
     });
 
-    const savedUser = await user.save();
-
-    // Return user without password
     return {
-      id: savedUser._id.toString(),
-      username: savedUser.username,
-      email: savedUser.email,
-      createdAt: savedUser.createdAt,
-      updatedAt: savedUser.updatedAt,
+      id: user._id.toString(),
+      username: user.username,
+      email: user.email,
+      createdAt: user.createdAt,
+      updatedAt: user.updatedAt,
     };
   }
 
   async findById(id: string): Promise<User | null> {
-    return await this.userModel.findById(id).select('-password').exec();
+    return this.userRepository.findById(id);
   }
 
   async login(loginUserDto: LoginUserDto): Promise<UserResponseDto> {
     const { email, password } = loginUserDto;
-    const user = await this.userModel.findOne({ email }).exec();
+    const user = await this.userRepository.findByEmail(email);
     if (!user) throw new NotFoundException('User Not Found');
 
     const isValid = await bcrypt.compare(password, user.password);
