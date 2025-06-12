@@ -1,73 +1,46 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
-import { Model, Types } from 'mongoose';
 import { Url } from './schemas/url.schema';
-import { nanoid } from 'nanoid';
+import { UrlRepository } from './url.repository';
+import { Types } from 'mongoose';
 
 @Injectable()
 export class UrlService {
-  constructor(@InjectModel(Url.name) private readonly urlModel: Model<Url>) {}
+  constructor(private readonly urlRepo: UrlRepository) {}
 
   async shortenUrl(originalUrl: string, userId?: string): Promise<Url> {
-    let shortCode: string;
+    const { nanoid } = await import('nanoid');
 
-    // Generate a unique short code
+    let shortCode: string;
     do {
       shortCode = nanoid(6);
-    } while (await this.urlModel.exists({ shortCode }));
+    } while (await this.urlRepo.isShortCodeExists(shortCode));
 
-    const newUrl = new this.urlModel({
-      originalUrl,
-      shortCode,
-      userId: userId ? new Types.ObjectId(userId) : undefined,
-    });
-
-    return newUrl.save();
+    return this.urlRepo.create(originalUrl, shortCode, userId);
   }
 
   async getOriginalUrl(shortCode: string): Promise<Url> {
-    const found = await this.urlModel.findOne({ shortCode }).exec();
-    if (!found) {
-      throw new NotFoundException('Short URL not found');
-    }
+    const url = await this.urlRepo.findByShortCode(shortCode);
+    if (!url) throw new NotFoundException('Short URL not found');
 
-    found.clicks += 1;
-    await found.save();
-
-    return found;
+    await this.urlRepo.incrementClicks(url);
+    return url;
   }
 
   async getUserUrls(userId: string): Promise<Url[]> {
-    return this.urlModel
-      .find({ userId: new Types.ObjectId(userId) })
-      .sort({ createdAt: -1 })
-      .exec();
+    return this.urlRepo.findByUserId(userId);
   }
 
   async updateUrl(id: string, userId: string, newUrl: string): Promise<Url> {
-    const url = await this.urlModel.findOne({
-      _id: new Types.ObjectId(id),
-      userId: new Types.ObjectId(userId),
-    });
+    const url = await this.urlRepo.findByIdAndUser(id, userId);
+    if (!url) throw new NotFoundException('URL not found or not owned by user');
 
-    if (!url) {
-      throw new NotFoundException('URL not found or not owned by user');
-    }
-
-    url.originalUrl = newUrl;
-    return await url.save();
+    return this.urlRepo.updateUrl(url, newUrl);
   }
 
   async deleteUrl(id: string, userId: string): Promise<void> {
-    const url = await this.urlModel.findOne({
-      _id: new Types.ObjectId(id),
-      userId: new Types.ObjectId(userId),
-    });
+    const url = await this.urlRepo.findByIdAndUser(id, userId);
+    if (!url) throw new NotFoundException('URL not found or not owned by user');
 
-    if (!url) {
-      throw new NotFoundException('URL not found or not owned by user');
-    }
-
-    await this.urlModel.deleteOne({ _id: url._id });
+    await this.urlRepo.deleteById((url._id as Types.ObjectId).toString());
   }
 }
