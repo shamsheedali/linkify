@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useState } from "react";
 import { Link } from "react-router-dom";
+import toast from "react-hot-toast";
 
 type SignupFormProps = React.ComponentPropsWithoutRef<"div"> & {
   onSignUp: (formData: {
@@ -28,6 +29,8 @@ export function SignupForm({ className, onSignUp, ...props }: SignupFormProps) {
     confirmPassword: "",
   });
 
+  const [loading, setLoading] = useState(false);
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { id, value } = e.target;
     setFormData((prev) => ({
@@ -43,34 +46,36 @@ export function SignupForm({ className, onSignUp, ...props }: SignupFormProps) {
     const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,}$/;
 
     if (username.length < 4 || username.length > 30) {
-      alert("Username must be between 4 and 30 characters.");
+      toast.error("Username must be between 4 and 30 characters.");
       return false;
     }
 
     if (!emailRegex.test(email)) {
-      alert("Enter a valid email address.");
+      toast.error("Enter a valid email address.");
       return false;
     }
 
     if (!passwordRegex.test(password)) {
-      alert(
+      toast.error(
         "Password must be at least 8 characters, and include uppercase, lowercase, number, and special character."
       );
       return false;
     }
 
     if (password !== confirmPassword) {
-      alert("Passwords do not match.");
+      toast.error("Passwords do not match.");
       return false;
     }
 
     return true;
   };
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
     if (!validateForm()) return;
+
+    setLoading(true);
 
     const signupData = {
       username: formData.username,
@@ -78,7 +83,11 @@ export function SignupForm({ className, onSignUp, ...props }: SignupFormProps) {
       password: formData.password,
     };
 
-    onSignUp(signupData);
+    try {
+      await onSignUp(signupData);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -137,8 +146,8 @@ export function SignupForm({ className, onSignUp, ...props }: SignupFormProps) {
                   required
                 />
               </div>
-              <Button type="submit" className="w-full">
-                Sign Up
+              <Button type="submit" className="w-full" disabled={loading}>
+                {loading ? "Creating account..." : "Sign up"}
               </Button>
             </div>
             <div className="mt-4 text-center text-sm">

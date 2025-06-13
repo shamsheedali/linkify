@@ -6,9 +6,11 @@ import urlService from "@/services/urlService";
 import useAuthStore from "@/store/useAuthStore";
 import { ArrowRight } from "lucide-react";
 import { useEffect, useState } from "react";
+import toast from "react-hot-toast";
 import { Link } from "react-router-dom";
 
 const Home = () => {
+  const [loading, setLoading] = useState(false);
   const [longUrl, setLongUrl] = useState("");
   const [urls, setUrls] = useState([]);
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
@@ -27,9 +29,20 @@ const Home = () => {
   }, [isAuthenticated]);
 
   const handleCreateUrl = async () => {
-    await urlService.createShortUrl(longUrl);
-    setLongUrl("");
-    fetchUrls();
+    if (!longUrl.trim()) return;
+
+    setLoading(true);
+    try {
+      await urlService.createShortUrl(longUrl);
+      toast.success("Short URL created");
+      setLongUrl("");
+      fetchUrls();
+    } catch (error) {
+      console.log(error);
+      toast.error("Failed to create short URL");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -58,7 +71,9 @@ const Home = () => {
             />
           </div>
           {isAuthenticated ? (
-            <Button onClick={handleCreateUrl}>Create your Linkify link</Button>
+            <Button onClick={handleCreateUrl} disabled={loading}>
+              {loading ? "Creating link..." : "Create your Linkify link"}
+            </Button>
           ) : (
             <Link to={"/login"}>
               <Button>

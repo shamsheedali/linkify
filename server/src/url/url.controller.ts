@@ -55,7 +55,7 @@ export class UrlController {
       throw new NotFoundException('Short URL not found');
     }
 
-    return res.redirect(HttpStatus.MOVED_PERMANENTLY, url.originalUrl);
+    return res.redirect(HttpStatus.FOUND, url.originalUrl);
   }
 
   @UseGuards(AuthGuard('jwt'))
