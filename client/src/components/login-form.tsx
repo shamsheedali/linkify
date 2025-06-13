@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Link } from "react-router-dom";
 import { useState } from "react";
+import toast from "react-hot-toast";
 
 type LoginFormProps = React.ComponentPropsWithoutRef<"div"> & {
   onLogin: (formData: { email: string; password: string }) => void;
@@ -21,6 +22,8 @@ export function LoginForm({ className, onLogin, ...props }: LoginFormProps) {
     email: "",
     password: "",
   });
+
+  const [loading, setLoading] = useState(false);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { id, value } = e.target;
@@ -37,12 +40,12 @@ export function LoginForm({ className, onLogin, ...props }: LoginFormProps) {
     const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,}$/;
 
     if (!emailRegex.test(email)) {
-      alert("Enter a valid email address.");
+      toast.error("Enter a valid email address.");
       return false;
     }
 
     if (!passwordRegex.test(password)) {
-      alert(
+      toast.error(
         "Password must be at least 8 characters, and include uppercase, lowercase, number, and special character."
       );
       return false;
@@ -51,10 +54,16 @@ export function LoginForm({ className, onLogin, ...props }: LoginFormProps) {
     return true;
   };
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!validateForm()) return;
-    onLogin(formData);
+
+    setLoading(true);
+    try {
+      await onLogin(formData);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -83,12 +92,6 @@ export function LoginForm({ className, onLogin, ...props }: LoginFormProps) {
               <div className="grid gap-2">
                 <div className="flex items-center">
                   <Label htmlFor="password">Password</Label>
-                  <a
-                    href="#"
-                    className="ml-auto inline-block text-sm underline-offset-4 hover:underline"
-                  >
-                    Forgot your password?
-                  </a>
                 </div>
                 <Input
                   id="password"
@@ -98,8 +101,8 @@ export function LoginForm({ className, onLogin, ...props }: LoginFormProps) {
                   required
                 />
               </div>
-              <Button type="submit" className="w-full">
-                Login
+              <Button type="submit" className="w-full" disabled={loading}>
+                {loading ? "Logging in..." : "Login"}
               </Button>
             </div>
             <div className="mt-4 text-center text-sm">
